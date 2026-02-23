@@ -13,8 +13,8 @@ Plant::Plant()
 
 State Plant::update(double control_input, double dt) {
     // Dummy deterministic update
+    true_state_.position += true_state_.velocity * dt + 0.5 * control_input * dt * dt;
     true_state_.velocity += control_input * dt;
-    true_state_.position += true_state_.velocity * dt;
 
     // for learning purposes, add the noises inside the plant
     State measurement;

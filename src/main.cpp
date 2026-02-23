@@ -11,13 +11,18 @@
 
 int main() {
     double dt = 0.01;   // 10 ms timestep → 100 Hz loop
+    double u = 0.0;     // control input
+
+    double sigma_a = 0.2;
+    double kp = 0.1;
+    double kd = 0.05;
+    double u_max = 2;
+    double u_min = -2;
 
     std::cout << "System starting...\n";
     Plant plant;
-    Estimator estimator(0.2, 0.005, dt);
-    Controller controller(0.1, 0.05, 2, -2); // (kp, kd, u_max, u_min)
-
-    double u = 0.0;     // control input
+    Estimator estimator(dt, sigma_a);
+    Controller controller(kp, kd, u_max, u_min); // (kp, kd, u_max, u_min)
 
     State measurement;
     State estimate;
@@ -35,7 +40,7 @@ int main() {
     for (int k=0; k < 1000; ++k) {
         double t = k * dt;
         measurement   = plant.update(u, dt);
-        estimate      = estimator.update(measurement);
+        estimate      = estimator.update(measurement, u);
         u             = controller.update(estimate);
 
         log << k
