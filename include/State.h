@@ -4,6 +4,7 @@
 struct State {
     double position;
     double velocity;
+    double bias;
 };
 
 #endif

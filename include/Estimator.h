@@ -16,7 +16,7 @@ private:
     
     double P11_, P12_, P22_;                    // Covariance P (2x2, symmetric)
 
-    double R11_, R22_;                          // measurement noise R (diagonal, since there is independent noise)
+    double R11_, R22_;                          // measurement noise R (diagonal, since there is independent
 };
 
 #endif

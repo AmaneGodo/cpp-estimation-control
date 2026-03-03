@@ -64,42 +64,23 @@ State Estimator::update(const State& measurement, double u) {
     // Innovation state = measured state - predicted state
         // H = I
     const double innovation_position = measurement.position - predicted_position;
-    const double innovation_velocity = measurement.velocity - predicted_velocity;
     
     // Innovation covariance - S
         // S = P_minus + R
-    const double S11 = P11_minus + R11_;
-    const double S12 = P12_minus;             // R off-diagonal is 0
-    const double S22 = P22_minus + R22_;
-
-    // invert S (2 x 2 inverse)
-    const double det = S11 * S22 - S12 * S12;
-    const double invS11 =  S22 / det;
-    const double invS12 = -S12 / det;
-    const double invS22 =  S11 / det;
-
+    const double S = P11_minus + R11_;
+    
     // Kalman Gain K = P_minus * S_inverse
-    const double K11 = P11_minus * invS11 + P12_minus * invS12;
-    const double K12 = P11_minus * invS12 + P12_minus * invS22;
-    const double K21 = P12_minus * invS11 + P22_minus * invS12;
-    const double K22 = P12_minus * invS12 + P22_minus * invS22;
+    const double K1 = P11_minus / S;    // gaain for position state
+    const double K2 = P12_minus / S;    // gain for velocity state (uses cross-variance)
 
     // updating estimated state: estimated state = predicted_state + kalman * innovation
-    estimated_state_.position = predicted_position + K11 * innovation_position + K12 * innovation_velocity;
-    estimated_state_.velocity = predicted_velocity + K21 * innovation_position + K22 * innovation_velocity;
+    estimated_state_.position = predicted_position + K1 * innovation_position;
+    estimated_state_.velocity = predicted_velocity + K2 * innovation_position;
 
     // Update covariance: P = (I - K) * P_minus
-        // Since H = I, (I - KH) = (1 - K)
-    const double IminusK11 = 1.0 - K11;
-    const double IminusK12 = -K12;
-    const double IminusK21 = -K21;
-    const double IminusK22 = 1.0 - K22;
-
-    P11_ = IminusK11 * P11_minus + IminusK12 * P12_minus;
-    P12_ = IminusK11 * P12_minus + IminusK12 * P22_minus;
-    P22_ = IminusK21 * P12_minus + IminusK22 * P22_minus;
-
-    // P12_ stays as the off-diagonal; P21 is same
+    P11_ = P11_minus - K1 * P11_minus;
+    P12_ = P12_minus - K1 * P12_minus;
+    P22_ = P22_minus - K2 * P12_minus;
 
     return estimated_state_;
 }

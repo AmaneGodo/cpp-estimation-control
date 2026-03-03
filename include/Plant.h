@@ -8,6 +8,7 @@ class Plant {
 public: 
     Plant();  
     State update(double control_input, double dt);
+    double getTrueBias() const;
 
 private:
     State true_state_;                              // keep true state hidden in the plant
