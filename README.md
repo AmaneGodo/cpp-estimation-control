@@ -134,7 +134,7 @@ Unlike the previous alpha-beta implementation, gain values are computed adaptive
 
     - Control Input
         - Because the controller operates on the estimated state, estimator tuning (process noise σₐ and measurement noise R) directly affects control smoothness and responsiveness
-        - ![Control Plot](docs/nominal/Control_Input_Plot.png)
+        - ![Control Plot](docs/nominal/Control_input_Plot.png)
 
 - Bias Mode (3-state KF + position-only update):
     - Bias Convergence
@@ -152,7 +152,7 @@ Unlike the previous alpha-beta implementation, gain values are computed adaptive
 
     - Control Input
         - Because the controller operates on the estimated state, bias compensation improves control consistency and reduces the need for the controller to “fight” systematic model error.
-        - ![Control Plot](docs/bias/Control_Input_Plot.png)
+        - ![Control Plot](docs/bias/Control_input_Plot.png)
 
 ## Key Insight
 Estimator structure fundamentally shapes closed-loop performance.
