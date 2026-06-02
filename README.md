@@ -15,110 +15,51 @@ The architecture mirrors a realistic robotics signal pipeline:
 
 Strict separation between ground truth, sensed data, estimation, and control logic is enforced throughout the system.
 
+## Engineering Motivation
+- Many robotics systems must estimate vehicle state from noisy and incomplete sensor measurements before control decisions can be made.
+- This project was built to explore how estimator design affects closed-loop control performance by comparing a standard Kalman filter against a bias-aware state estimator under identical operating conditions.
+
+## Project Outcome
+- Implemented a modular C++ estimation-control framework comparing nominal and bias-aware Kalman estimators.
+- Results demonstrate that bias augmentation reduces systematic drift, improves state consistency, and produces more stable closed-loop behavior.
+
 ## System Architecture
 - Plant
-    - Owns true state (position, velocity)
-    - Propagates dynamics using discrete-time integration
-    - Models acceleration as control input
-    - Injects Gaussian noise into measurements
-    - Does not expose true state to estimator or controller
+    - Simulates true position and velocity dynamics
+    - Generates noisy measurements
 
-- Estimator (Kalman Filter)
-   Two variants:
-    1) Nominal (2-state)
-        - State: [position, velocity]
-        - Uses both position and velocity measurements
+- Estimator
+    - Nominal 2-state Kalman filter
+    - Bias-aware 3-state Kalman filter
+    - Explicit covariance propagation without external libraries
 
-    2) Bias-Aware (3-state)
-        - State: [position, velocity, bias]
-        - Models unknown constant acceleration bias
-        - Uses position-only measurement update
-        - Learns bias through accumulated position residuals
-
-    - Both estimators:
-        - Perform prediction and residual-based correction
-        - Propagate covariance explicitly (no matrix libraries used)
-        - Use only noisy measurements
-        - Do not access true state
-
-- Controller (PD)
-    - Owns gains (kp, kd) and actuator limits
-    - Computes control input from estimated state
-    - Operates strictly on inferred state
-
-## Motion Model
-- Nominal (2-state)
-    - State: 
-        - x = [position
-               velocity]
-
-    - Discrete-time dynamics:   
-        - x_k+1 = Ax_k + Bu_k + w_k
-        - A = [1 dt 
-               0  1]
-        - B = [0.5dt^2
-                 dt   ]
+- Controller
+    - PD controller operating on estimated state
     
-    - Process noise models acceleration uncertainty.
-        - Process covariance: Q = σₐ² * [dt⁴/4  dt³/2
-                                         dt³/2    dt²]
-    
-- Bias-Aware (3-State)
-    - State:
-        - x = [position
-               velocity
-                 bias  ]
+```text
+    Plant
+    │
+    ▼
+    Measurement
+    │
+    ▼
+    Kalman Filter
+    │
+    ▼
+    PD Controller
+    │
+    └─────────────► Plant
+```
 
-    - Dynamics:
-        - position_k+1 = position_k + velocity_k * dt + 0.5 (u - bias_k) * dt^2
-        - velocity_k+1 = velocity_k + (u - bias_k) * dt
-        - bias_k+1     = bias_k
+## Key Insight
+Estimator structure fundamentally shapes closed-loop performance.
+- Transitioning from:
+    - Fixed-gain alpha-beta filter
+        → Covariance-driven Kalman filter
+        → Bias-augmented state estimator
+demonstrates how model fidelity improves state consistency, removes systematic drift, and stabilizes control behavior.
 
-    - Where:
-        - u is commanded acceleration
-        - bias represents unknown acceleration offset
-
-    - Process noise:
-        - Acceleration uncertainty (σ_a)
-        - Bias random-walk parameter (σ_b), modeling slow drift in bias
-
-## Measurement Model
-- Nominal:
-    - Both position and velocity are measured with independent Gaussian noise:
-        - Measurement model: z = Hx + v
-        - Innovation (residual): r = z - Hx_pred
-        - H = I (identity matrix)
-
-    - Measurement covariance:
-        - R = [(σ_pos)^2    0
-                0     (σ_vel)^2]
-
-- Bias:
-    - Only position is measured:
-        - H = [1  0  0]
-
-    - Innovation Covariance:
-        - S = H P Hᵀ + R = P11_minus + R 
-
-    - Velocity and bias are not directly measured, but become observable over time because their influence accumulates in position error.
-
-## Estimation Method (Kalman Filter)
-Each update step consists of:
-- Prediction
-    - Propagate state using motion model
-    - Propagate covariance using APA^T + Q
-
-- Innovation 
-    - residual = measurement - predicted_state
-
-- Kalman Gain
-    - K = (P_minus * H^T) / (H * P_minus * H^T + R)
-
-- Correction
-    - x_estimated = x_predicted + Kalman gain * innovation
-    - Uncertainty P = (I - K * H) * P_minus
-
-Unlike the previous alpha-beta implementation, gain values are computed adaptively from covariance rather than manually tuned parameters.
+Bias modeling transforms persistent steady-state error into an identifiable and correctable state.
 
 ## Closed-Loop Behavior & Observations
 - Nominal:
@@ -154,15 +95,21 @@ Unlike the previous alpha-beta implementation, gain values are computed adaptive
         - Because the controller operates on the estimated state, bias compensation improves control consistency and reduces the need for the controller to “fight” systematic model error.
         - ![Control Plot](docs/bias/Control_input_Plot.png)
 
-## Key Insight
-Estimator structure fundamentally shapes closed-loop performance.
-- Transitioning from:
-    - Fixed-gain alpha-beta filter
-        → Covariance-driven Kalman filter
-        → Bias-augmented state estimator
-demonstrates how model fidelity improves state consistency, removes systematic drift, and stabilizes control behavior.
+## Implementation Details
+- Constant-velocity state model
+- Covariance-based Kalman filtering
+- Bias-augmented estimator variant
+- PD control operating on estimated state
+- Explicit covariance propagation without external matrix libraries
 
-Bias modeling transforms persistent steady-state error into an identifiable and correctable state.
+## Technologies Used
+- C++
+- Object-Oriented Design
+- Kalman Filtering
+- State Estimation
+- PD Control
+- CSV Logging
+- Python Visualization
 
 ## Future Work
 - Implement Joseph form covariance update for improved numerical stability
